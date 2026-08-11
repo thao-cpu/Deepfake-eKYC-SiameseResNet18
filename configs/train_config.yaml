@@ -1,0 +1,133 @@
+# Deepfake Detection
+# Siamese ResNet18 + Triplet Loss
+
+# 1. EXPERIMENT
+experiment:
+  name: "siamese_resnet18_triplet"
+  seed: 42
+  device: "cuda"
+
+# 2. DATASET
+data:
+  train_dir: "data/train"
+  val_dir: "data/val"
+  test_dir: "data/test"
+
+  image_size: 224
+
+  num_classes: 2
+
+  classes:
+    - real
+    - fake
+
+  num_workers: 4
+
+# 3. MODEL
+model:
+  name: "resnet18"
+
+  pretrained: true
+
+  embedding_dim: 128
+
+  dropout: 0.3
+
+# 4. TRAINING
+training:
+  batch_size: 32
+
+  epochs: 30
+
+  optimizer: "adamw"
+
+  learning_rate: 0.0001
+
+  weight_decay: 0.0001
+
+  early_stopping:
+    enabled: true
+
+    patience: 5
+
+    monitor: "val_f1"
+
+# 5. BASELINE
+# ResNet18 + BCE
+baseline:
+  enabled: true
+
+  loss: "bce_with_logits"
+
+# 6. SIAMESE + TRIPLET
+siamese:
+  enabled: true
+
+  loss: "triplet_margin"
+
+  margin: 0.2
+
+  distance: "euclidean"
+
+# 7. TRIPLET SAMPLING
+triplet:
+  anchor: "same_class"
+
+  positive: "same_class"
+
+  negative: "different_class"
+
+  mining: "hard"
+
+# 8. DATA AUGMENTATION
+augmentation:
+  enabled: true
+
+  horizontal_flip: 0.5
+
+  rotation: 10
+
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+
+# 9. EVALUATION
+evaluation:
+
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+
+  confusion_matrix: true
+
+  fp_fn_analysis: true
+
+  threshold: 0.5
+
+# 10. VIDEO INFERENCE
+video:
+  frames_per_video: 10
+
+  aggregation: "mean"
+
+# 11. CHECKPOINT
+checkpoint:
+
+  save_dir: "checkpoints"
+
+  save_best: true
+
+  monitor: "val_f1"
+
+# 12. LOGGING
+logging:
+
+  log_dir: "logs"
+
+  save_config: true
+
+  save_metrics: true
