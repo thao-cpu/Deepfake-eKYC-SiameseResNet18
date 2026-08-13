@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Bỏ qua các thư mục chứa dữ liệu nặng và ảnh/video
+output_dataset/
+video_dataset_balanced/
+*.mp4
+*.jpg
+*.csv
