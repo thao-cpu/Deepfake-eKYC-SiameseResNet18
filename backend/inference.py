@@ -24,7 +24,8 @@ class DeepfakeEngine:
         else:
             print("Đang nạp mô hình ResNet18 Baseline lên RAM...")
             self.model = ResNet18Baseline(pretrained=False).to(self.device)
-            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+            checkpoint = torch.load(model_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint["model_state_dict"])
             self.model.eval() 
             print(f"Đã nạp thành công Baseline lên {self.device}.")
 
