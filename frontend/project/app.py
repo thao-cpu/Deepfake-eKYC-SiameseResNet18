@@ -1,21 +1,284 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Deepfake Detection",
-    page_icon="🔍",
-    layout="centered"
+    page_title="Liveness Detection",
+    page_icon="🔐",
+    layout="wide",
 )
 
-st.title("🔍 Deepfake Detection")
-st.write("Passive Liveness Detection using Siamese ResNet18")
+# ============================================================
+# CUSTOM UI
+# ============================================================
 
-uploaded_file = st.file_uploader(
-    "Upload an image or video",
-    type=["jpg", "jpeg", "png", "mp4", "avi", "mov"]
-)
+st.markdown("""
+<style>
+    .main {
+        background-color: #0e1117;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+
+    .header {
+        padding: 10px 0 25px 0;
+    }
+
+    .title {
+        font-size: 2.4rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        color: #9aa4b2;
+        font-size: 1rem;
+    }
+
+    .status-card {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 14px;
+        padding: 22px;
+        min-height: 210px;
+    }
+
+    .card-title {
+        font-size: 1.15rem;
+        font-weight: 650;
+        margin-bottom: 18px;
+    }
+
+    .status-row {
+        padding: 10px 0;
+        border-bottom: 1px solid #252b33;
+    }
+
+    .status-label {
+        color: #9aa4b2;
+    }
+
+    .ready {
+        color: #3fb950;
+        font-weight: 600;
+    }
+
+    .waiting {
+        color: #d29922;
+        font-weight: 600;
+    }
+
+    .info-box {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 14px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .result-box {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 14px;
+        padding: 25px;
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown("""
+<div class="header">
+    <div class="title">🔐 Liveness Detection</div>
+    <div class="subtitle">
+        AI-powered real/fake verification system
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
+# SYSTEM STATUS
+# ============================================================
+
+col_status, col_space = st.columns([1, 3])
+
+with col_status:
+    st.markdown(
+        '<span class="ready">● SYSTEM READY</span>',
+        unsafe_allow_html=True
+    )
+
+
+st.divider()
+
+
+# ============================================================
+# PASSIVE LIVENESS
+# ============================================================
+left, right = st.columns([1.25, 1])
+
+
+# ------------------------------------------------------------
+# LEFT: INPUT
+# ------------------------------------------------------------
+
+with left:
+
+    st.subheader("📁 Passive Liveness")
+
+    st.caption(
+        "Upload an image or video for passive liveness detection."
+    )
+
+    uploaded_file = st.file_uploader(
+        "Choose a file",
+        type=[
+            "jpg",
+            "jpeg",
+            "png",
+            "mp4",
+            "avi",
+            "mov"
+        ],
+    )
+
+    if uploaded_file is None:
+
+        st.info(
+            "Upload an image or video to start "
+            "passive liveness detection."
+        )
+
+    else:
+
+        st.success(
+            f"✓ File received: {uploaded_file.name}"
+        )
+
+        st.write(
+            f"**Type:** `{uploaded_file.type}`"
+        )
+
+        st.write(
+            f"**Size:** `{uploaded_file.size / 1024:.1f} KB`"
+        )
+
+        if uploaded_file.type.startswith("image"):
+
+            st.image(
+                uploaded_file,
+                caption="Input image",
+                use_container_width=True
+            )
+
+        elif uploaded_file.type.startswith("video"):
+
+            st.video(uploaded_file)
+
+
+# ------------------------------------------------------------
+# RIGHT: VERIFICATION STATUS
+# ------------------------------------------------------------
+
+with right:
+
+    st.subheader("🔎 Verification Status")
+    st.divider()
+
+    rows = [
+        ("System", "● Ready", "success"),
+        ("Input",
+          "● Received" if uploaded_file is not None else "● Waiting",
+          "success" if uploaded_file is not None else "warning"),
+          
+        ("Passive Model", "● Waiting for API", "warning"),
+        ("Result", "—", "info"),
+    ]
+
+    for label, value, status in rows:
+        col1, col2 = st.columns([1, 1.6])
+
+        with col1:
+            st.markdown(f"**{label}**")
+
+        with col2:
+            if status == "success":
+                st.success(value)
+            elif status == "warning":
+                st.warning(value)
+            else:
+                st.info(value)
+
+# ============================================================
+# RESULT PLACEHOLDER
+# ============================================================
 
 if uploaded_file is not None:
-    st.success(f"Uploaded: {uploaded_file.name}")
+
+    st.markdown("""
+    <div class="result-box">
+
+        <div class="card-title">
+            Verification Result
+        </div>
+
+        <div style="font-size: 2rem; font-weight: 700;">
+            ⏳ WAITING FOR BACKEND
+        </div>
+
+        <div style="color: #9aa4b2; margin-top: 8px;">
+            Passive Liveness API has not been connected yet.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================
+# ACTIVE LIVENESS
+# ============================================================
+
+st.divider()
+
+st.subheader("🎥 Active Liveness")
+
+st.caption(
+    "Realtime face verification using MediaPipe "
+    "and interactive challenges."
+)
+
+
+# ============================================================
+# ACTIVE LIVENESS STATUS
+# ============================================================
+
+active_col1, active_col2, active_col3 = st.columns(3)
+
+with active_col1:
+    st.markdown(
+        '<span class="ready">● Camera Ready</span>',
+        unsafe_allow_html=True
+    )
+
+with active_col2:
+    st.markdown(
+        '<span class="ready">● Face Detection Ready</span>',
+        unsafe_allow_html=True
+    )
+
+with active_col3:
+    st.markdown(
+        '<span class="ready">● Challenge Ready</span>',
+        unsafe_allow_html=True
+    )
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 import av
