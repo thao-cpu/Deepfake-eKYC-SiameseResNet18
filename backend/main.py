@@ -15,7 +15,7 @@ engine = None
 async def lifespan(app: FastAPI):
     global engine
     # Sẽ tự động Mock nếu không có file này trong thư mục models/
-    engine = DeepfakeEngine("models/baseline_model.onnx") 
+    engine = DeepfakeEngine("models/best_model.pth")
     yield
     engine = None
 
