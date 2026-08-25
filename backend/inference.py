@@ -40,7 +40,8 @@ class DeepfakeEngine:
             boxes, probs = self.mtcnn.detect(img_pil)
             
             # Nếu không tìm thấy mặt, trả về None để bỏ qua frame này
-            if boxes is None or probs[0] <= 0.70:
+            # Thêm chặn probs[0] is None
+            if boxes is None or probs[0] is None or probs[0] <= 0.70:
                 return None
                 
             box = boxes[0]
@@ -132,51 +133,55 @@ class DeepfakeEngine:
             temp_video.write(video_bytes)
             temp_video_path = temp_video.name
 
-        cap = cv2.VideoCapture(temp_video_path)
-        if not cap.isOpened():
-            os.remove(temp_video_path)
-            raise ValueError("Không thể đọc video.")
+        try:
+            cap = cv2.VideoCapture(temp_video_path)
+            if not cap.isOpened():
+                raise ValueError("Không thể đọc video.")
 
-        scores = []
-        frame_count = 0
-        error_frames = 0
-        frame_skip = 10 
-        
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret: break
-                
-            if frame_count % frame_skip == 0:
-                numpy_tensor = self.preprocess(frame)
-                
-                # Chỉ tính điểm nếu MTCNN dò ra mặt
-                if numpy_tensor is not None:
-                    if self.is_mock:
-                        score = float(np.random.uniform(0.0, 1.0))
-                    else:
-                        torch_tensor = torch.from_numpy(numpy_tensor).to(self.device)
-                        with torch.no_grad():
-                            logit = self.model(torch_tensor)
-                            score = torch.sigmoid(logit).item()
-                    scores.append(score)
-                else:
-                    error_frames += 1
+            scores = []
+            frame_count = 0
+            error_frames = 0
+            frame_skip = 10 
             
-            frame_count += 1
-            if len(scores) >= 30: break
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret: break
+                    
+                if frame_count % frame_skip == 0:
+                    numpy_tensor = self.preprocess(frame)
+                    
+                    if numpy_tensor is not None:
+                        if self.is_mock:
+                            score = float(np.random.uniform(0.0, 1.0))
+                        else:
+                            torch_tensor = torch.from_numpy(numpy_tensor).to(self.device)
+                            with torch.no_grad():
+                                logit = self.model(torch_tensor)
+                                score = torch.sigmoid(logit).item()
+                        scores.append(score)
+                    else:
+                        error_frames += 1
+                
+                frame_count += 1
+                if len(scores) >= 30: break
 
-        cap.release()
-        os.remove(temp_video_path)
+            cap.release()
 
-        if len(scores) == 0:
-            raise ValueError("Không tìm thấy khuôn mặt nào trong toàn bộ video.")
+            if len(scores) == 0:
+                raise ValueError("Không tìm thấy khuôn mặt nào trong toàn bộ video.")
 
-        return {
-            "final_score": sum(scores) / len(scores),
-            "stats": {
-                "total_frames_processed": len(scores),
-                "frames_no_face_detected": error_frames,
-                "max_score": round(max(scores), 4),
-                "min_score": round(min(scores), 4)
+            return {
+                "final_score": sum(scores) / len(scores),
+                "stats": {
+                    "total_frames_processed": len(scores),
+                    "frames_no_face_detected": error_frames,
+                    "max_score": round(max(scores), 4),
+                    "min_score": round(min(scores), 4)
+                }
             }
-        }
+        finally:
+            if os.path.exists(temp_video_path):
+                try:
+                    os.remove(temp_video_path)
+                except Exception:
+                    pass
