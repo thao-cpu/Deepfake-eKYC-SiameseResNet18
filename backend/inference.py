@@ -6,7 +6,7 @@ import os
 from facenet_pytorch import MTCNN
 from PIL import Image
 
-from model_arch import ResNet18Baseline
+from model_arch import SiameseResNet18
 
 class DeepfakeEngine:
     def __init__(self, model_path: str):
@@ -23,7 +23,7 @@ class DeepfakeEngine:
             print(f"CẢNH BÁO: Không có file '{model_path}'. Chạy chế độ MOCK.")
         else:
             print("Đang nạp mô hình ResNet18 Baseline lên RAM...")
-            self.model = ResNet18Baseline(pretrained=False).to(self.device)
+            self.model = SiameseResNet18(pretrained=False).to(self.device)
             checkpoint = torch.load(model_path, map_location=self.device)
             self.model.load_state_dict(checkpoint["model_state_dict"])
             self.model.eval() 

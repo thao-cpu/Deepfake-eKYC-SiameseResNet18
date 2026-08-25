@@ -1,18 +1,34 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import torch.nn.functional as F
 
-class ResNet18Baseline(nn.Module): 
-    def __init__(self, pretrained=True, dropout=0.3):
+class SiameseResNet18(nn.Module):
+    def __init__(self, pretrained=False, embedding_dim=128, dropout=0.3):
         super().__init__()
         self.backbone = models.resnet18(
             weights=models.ResNet18_Weights.DEFAULT if pretrained else None
         )
         in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(in_features, 1) 
-        ) 
+        # Xóa lớp fc cũ, thay bằng Identity
+        self.backbone.fc = nn.Identity()
+
+        # Tạo đầu embedding 
+        self.embedding_head = nn.Sequential(
+            nn.Linear(in_features, embedding_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        # Đầu phân loại
+        self.classifier = nn.Linear(embedding_dim, 1)
+
+    def encode(self, x):
+        features = self.backbone(x)
+        embedding = self.embedding_head(features)
+        return F.normalize(embedding, p=2, dim=1)
+
     def forward(self, x):
-        logits = self.backbone(x)
-        return logits.squeeze(1)
+        emb = self.encode(x)
+        # Chỉ lấy logits để nhét vào hàm Sigmoid bên file inference
+        logits = self.classifier(emb).squeeze(1)
+        return logits
