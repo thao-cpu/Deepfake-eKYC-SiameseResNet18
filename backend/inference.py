@@ -25,7 +25,13 @@ class DeepfakeEngine:
             print("Đang nạp mô hình ResNet18 Baseline lên RAM...")
             self.model = SiameseResNet18(pretrained=False).to(self.device)
             checkpoint = torch.load(model_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint["model_state_dict"])
+
+            # Kiểm tra xem file .pth có bọc key "model_state_dict" hay không
+            if "model_state_dict" in checkpoint:
+                self.model.load_state_dict(checkpoint["model_state_dict"])
+            else:
+                # Nếu lưu trực tiếp như code của Thảo thì nạp thẳng checkpoint
+                self.model.load_state_dict(checkpoint)
             self.model.eval() 
             print(f"Đã nạp thành công Baseline lên {self.device}.")
 

@@ -4,23 +4,26 @@ import torchvision.models as models
 import torch.nn.functional as F
 
 class SiameseResNet18(nn.Module):
-    def __init__(self, pretrained=False, embedding_dim=128, dropout=0.3):
+    # Đổi dropout mặc định thành 0.4 cho khớp bản train mới nhất
+    def __init__(self, pretrained=False, embedding_dim=128, dropout=0.4):
         super().__init__()
         self.backbone = models.resnet18(
             weights=models.ResNet18_Weights.DEFAULT if pretrained else None
         )
         in_features = self.backbone.fc.in_features
-        # Xóa lớp fc cũ, thay bằng Identity
         self.backbone.fc = nn.Identity()
 
-        # Tạo đầu embedding 
         self.embedding_head = nn.Sequential(
             nn.Linear(in_features, embedding_dim),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
-        # Đầu phân loại
-        self.classifier = nn.Linear(embedding_dim, 1)
+        
+        # BẢN MỚI CÓ THÊM DROPOUT Ở CLASSIFIER
+        self.classifier = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(embedding_dim, 1)
+        )
 
     def encode(self, x):
         features = self.backbone(x)
@@ -29,6 +32,6 @@ class SiameseResNet18(nn.Module):
 
     def forward(self, x):
         emb = self.encode(x)
-        # Chỉ lấy logits để nhét vào hàm Sigmoid bên file inference
+        # Chỉ trả về logits để khớp với hàm sigmoid trong inference.py
         logits = self.classifier(emb).squeeze(1)
         return logits
